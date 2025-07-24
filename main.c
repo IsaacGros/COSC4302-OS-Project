@@ -2,6 +2,7 @@
 #include <stdlib.h>     // For exit() and standard library functions
 #include <string.h>     // For string manipulation like strtok()
 #include <unistd.h>     // For getcwd(), fork(), execv(), etc.
+#include <sys/wait.h>   // For waitpid()
 
 #define MAX_LINE 1024 // Set a limit to length of command line
 #define MAX_ARGS 64   // Max number of arguments supported
@@ -58,13 +59,40 @@ int main() {
 
         parse_command(command_line, args); // Break command line into command + arguments
 
-        // This is to verify that parsing works, that is print the command and its arguments
-        printf("Command: %s\n", args[0]);   // First token is the command (like "ls")
-        for (int i = 1; args[i] != NULL; i++) {
-            printf("Arg %d: %s\n", i, args[i]); // Print the argument after the command
+
+        // Handle the built-in exit
+        if (strcmp(args[0], "exit") == 0) {
+            printf("Exiting shell...\n");
+            break;
         }
 
-        // Need to fork and use execv() to actually run the commands
+        // Handle built-in cd
+        if (strcmp(args[0], "cd") == 0) {
+            if (args[1] == NULL) {
+                fprintf(stderr, "cd: expected argument\n");
+            } else if (chdir(args[1]) != 0) {
+                perror("cd");
+            }
+            continue;
+        }
+
+        pid_t pid = fork();
+
+        if (pid < 0) {
+            perror("fork failed");
+            exit(1);
+        }
+
+        if (pid == 0) {
+            // This is the child process
+            execvp(args[0], args);
+            perror("execvp failed");
+            exit(1); // This is to exit if evecvp fails
+        } else {
+            // This is the parent process
+            int status;
+            waitpid(pid, &status, 0);
+        }
     }
 
     return 0; // Exit the shell (currently not reachable)
