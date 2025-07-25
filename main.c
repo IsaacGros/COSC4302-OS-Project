@@ -1,3 +1,48 @@
+/*
+Authors: Gavin Guyote, Isaac Gros, Oscar Herrera
+Course: Summer 2025 Operating Systems (COSC-4302-48F)_OL
+Assignment: COSC4302 Operating Systems Group Project
+Instructor: Dr. Bo Sun
+Due Date: 10:00am, July 28, 2025 (Monday)
+
+Description of the problem the program was written to solve:
+This group project was assigned to us with the intention of creating an interactive shell program
+that prompts the user for a command, parses the command, and executes it with a child process.
+The problem statement is that when users are operating a computer they need to interact with the
+system OS for processing I/O such as running programs or managing files. However a system's OS is
+made with the intention of being general purpose and may not provide the features for specific 
+user's needs. So a custom shell can be designed with a specialized interface for the user which
+works by invoking the OS services while also keeping the functionality of the OS intact.
+
+The algorithm used to solve the problem:
+Firstly a minishell or subshell needed to be created to simulate the behavior of a shell within a
+shell in a Linux environment. Next the minishell needs to be able to execute computations so to 
+handle this requirement a new child process is made execute commands. Executing commands with a 
+child process instead of the parent process is done to prevent the initial process from crashing 
+the machine if any fatal errors occur during execution. Next the minishell needed to get a command 
+line in order to return any typed command by the user to the minishell. The minishell is able to
+do this by performing a blocking read operation so that the is blocked until the usser types a
+command to the minishell prompt. Once the minishell gets the command line it needs to parse the
+command by reading the PATH variable entered and then building an array, dirs[] of the directories
+in PATH. Next the minishell needs to be able to find the command file in order to execute the
+command. The minishell searches the PATH environment variable either with a relative path or
+absolute path in a list of absolute pathnames where the minishell should search for the command.
+The minishell checks for these pathnames in all the included directories such as .:/bin:/usr/bin.
+Finally once the command file has been found and retrieved the command is executed using execv,
+which performs the operation of the entered command like ls, pwd, or mkdir in minishell the same
+as it would in the initial shelll.
+
+Program's operational requirements:
+Programming Langauge: C
+Runtime Environment: Linux system
+Compiler: gcc
+Input information: To use the minishell just compile the source code main.c as follows
+"gcc -o mysh main.c" and then enter "./mysh" to run the minishell.
+Incomplete required features: After reviewing the assigned materials and requirements.
+We believe there are no missing features or existing bugs that we are currently aware of.
+*/
+
+
 #include <stdio.h>      // For input/output functions like printf and fgets
 #include <stdlib.h>     // For exit() and standard library functions
 #include <string.h>     // For string manipulation like strtok()
@@ -9,15 +54,24 @@
 #define MAX_PATHS 64  // Max number of directories in PATH
 #define MAX_PATH_LEN 1024 // Max length for a full executable path
 
-// Function to print the shell prompt (ex: /home/gavin$)
+
+/*Class Name: print_prompt
+Authors: Gavin
+External Packages: <stdio.h>, <unistd.h>
+Class description: Function to print the shell prompt (ex: /home/gavin$)
+*/
 void print_prompt() {
-    char cwd[1024];
+    char cwd[1024]; // Array to store entered name of current working directory
     getcwd(cwd, sizeof(cwd)); // Grab the current working directory
     printf("%s$ ", cwd);  // Show current directory as prompt
     fflush(stdout);   // Forces the prompt to appear immediately
 }
 
-// Function to read a line of input from the user
+/*Class Name: read_command
+Authors: Gavin
+External Packages: <stdio.h>, <string.h>, <unistd.h>
+Class description: Function to read a line of input from the user
+*/
 void read_command(char *buffer) {
     if (fgets(buffer, MAX_LINE, stdin) == NULL) { 
         // If input is NULL (like Ctrl+D), exit the shell
@@ -29,7 +83,11 @@ void read_command(char *buffer) {
     buffer[strcspn(buffer, "\n")] = '\0';
 }
 
-// Function to split the command line into arguments
+/*Class Name: parse_command
+Authors: Gavin
+External Packages: <stdio.h>, <string.h>
+Class description:  Function to split the command line into arguments
+*/
 void parse_command(char *input, char **args) {
     int i = 0;
     char *token = strtok(input, " ");
@@ -43,6 +101,11 @@ void parse_command(char *input, char **args) {
     args[i] = NULL; // NULL-terminate the array so execv() knows where to stop
 }
 
+/*Class Name: parse_path
+Authors: Gavin
+External Packages: <stdio.h>, <string.h>
+Class description:  Function to parse the entered PATH to be looked up
+*/
 int parse_path(char *dirs[]) {
     char *path_env = getenv("PATH");   // Grab the path variable
     int i = 0; 
@@ -62,7 +125,11 @@ int parse_path(char *dirs[]) {
 
 }
 
-// Find the executable by looking in each folder from PATH
+/*Class Name: *lookup_path
+Authors: Gavin
+External Packages: <stdio.h>, <string.h>, <unistd.h>
+Class description:  Find the executable by looking in each folder from PATH
+*/
 char *lookup_path(char *command, char *dirs[]) {
     static char full_path[MAX_PATH_LEN];
 
@@ -82,7 +149,11 @@ char *lookup_path(char *command, char *dirs[]) {
     return NULL;    // Could not find command.
 }
 
-
+/*Class Name: main
+Authors: Gavin
+External Packages: <stdio.h>, <string.h>, <unistd.h>, <sys/wait.h>
+Class description:  Main function where the code is executed and processed by invoking helper functions
+*/
 int main() {
     char command_line[MAX_LINE];    // Buffer to hold the raw command input
     char *args[MAX_ARGS];           // Array of strings (char pointers) for command and arguments
