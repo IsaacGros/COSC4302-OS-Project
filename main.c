@@ -15,31 +15,45 @@ user's needs. So a custom shell can be designed with a specialized interface for
 works by invoking the OS services while also keeping the functionality of the OS intact.
 
 The algorithm used to solve the problem:
-Firstly a minishell or subshell needed to be created to simulate the behavior of a shell within a
-shell in a Linux environment. Next the minishell needs to be able to execute computations so to 
-handle this requirement a new child process is made execute commands. Executing commands with a 
-child process instead of the parent process is done to prevent the initial process from crashing 
-the machine if any fatal errors occur during execution. Next the minishell needed to get a command 
-line in order to return any typed command by the user to the minishell. The minishell is able to
-do this by performing a blocking read operation so that the is blocked until the usser types a
-command to the minishell prompt. Once the minishell gets the command line it needs to parse the
-command by reading the PATH variable entered and then building an array, dirs[] of the directories
-in PATH. Next the minishell needs to be able to find the command file in order to execute the
-command. The minishell searches the PATH environment variable either with a relative path or
-absolute path in a list of absolute pathnames where the minishell should search for the command.
-The minishell checks for these pathnames in all the included directories such as .:/bin:/usr/bin.
-Finally once the command file has been found and retrieved the command is executed using execv,
-which performs the operation of the entered command like ls, pwd, or mkdir in minishell the same
-as it would in the initial shelll.
+1.A minishell or subshell needed to be created to simulate the behavior of a shell within a
+shell in a Linux environment.
+2.The minishell needs to be able to execute computations, so to handle this requirement a new
+child process is made to execute commands. Executing commands with a child process instead of
+the parent process is done to prevent the initial process from crashing the machine if any fatal
+errors occur during execution.
+3.The minishell needed to have a command line in order to prompt any typed command by the user to
+the minishell. The minishell is able to do this by performing a blocking read operation so that
+the shell is blocked until the user types a command to the minishell prompt.
+4.Once the command is entered into the minishell it needs to parse the command into an array of
+tokens that can be read as the command and its specified arguments by execv().
+5.The minishell needs to be able to find where the command file actually exists on the disk in
+order to execute the command. The minishell searches for the PATH environment variable like 
+.:/bin:/usr/bin. for all the places where the command file could exist. This is done by creating
+an array of directories for each directory with dirs[].
+6.The minishell can now check each directory in the dirs[] array to find the tokenized command.
+This is done by looping through each directory and invoking the function access() to search for
+the command in the directory.
+7.Once the location of the command is found the full absolute path can be used to run the command 
+by entering the tokenized array of the command into the execv() function. This performs the
+operation of the entered command like ls, pwd, or mkdir in minishell just the same as it would in
+the initial shell.
+8.The parent process, waits for the child process executing the command to terminate before
+continuing the shell loop for the next command.
 
 Program's operational requirements:
-Programming Langauge: C
+Programming Language: C
 Runtime Environment: Linux system
-Compiler: gcc
-Input information: To use the minishell just compile the source code main.c as follows
-"gcc -o mysh main.c" and then enter "./mysh" to run the minishell.
-Incomplete required features: After reviewing the assigned materials and requirements.
-We believe there are no missing features or existing bugs that we are currently aware of.
+IDE: Visual Studio Code
+Repository: Github
+Compiler: gcc (GNU Compiler Collection)
+
+Input information: 
+To use the minishell just compile the source code main.c as follows "gcc -o mysh main.c" and then
+enter "./mysh" to run the minishell.
+
+Incomplete required features: 
+After reviewing the assigned materials and requirements. We believe there are no missing features
+or existing bugs that we are currently aware of.
 */
 
 
