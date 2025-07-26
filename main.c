@@ -69,111 +69,146 @@ or existing bugs that we are currently aware of.
 #define MAX_PATH_LEN 1024 // Max length for a full executable path
 
 
-/*Class Name: print_prompt
+/*Function Name: print_prompt
 Authors: Gavin
 External Packages: <stdio.h>, <unistd.h>
-Class description: Function to print the shell prompt (ex: /home/gavin$)
+Function description: This function prints the current working directory as a
+shell prompt (ex: /home/gavin$) emulating a Linux shell. This is to inform the
+user the file path they are currently in as well as acting as the shell prompt
+for the user to interface with for actions like entering a command.
 */
+
 void print_prompt() {
-    char cwd[1024]; // Array to store entered name of current working directory
-    getcwd(cwd, sizeof(cwd)); // Grab the current working directory
-    printf("%s$ ", cwd);  // Show current directory as prompt
+    char cwd[1024]; // A character buffer that stores the full path of the current working directory.
+    getcwd(cwd, sizeof(cwd)); // Grabs the current working directory and stores it in the cwd[] array.
+    printf("%s$ ", cwd);  // Prints the working directory using %string with a $ appended to it for prompt format
     fflush(stdout);   // Forces the prompt to appear immediately
 }
 
-/*Class Name: read_command
+/*Function Name: read_command
 Authors: Gavin
 External Packages: <stdio.h>, <string.h>, <unistd.h>
-Class description: Function to read a line of input from the user
+Function description: This function reads a line of input from the user and stores
+it in a buffer. The function also includes an exit control that exits the shell.
+The function also removes the newline character to handle the strings syntax conversion. 
 */
-void read_command(char *buffer) {
+void read_command(char *buffer) { 
+    // fgets reads the entered standard input in buffer up to the MAX_LINE characters
     if (fgets(buffer, MAX_LINE, stdin) == NULL) { 
         // If input is NULL (like Ctrl+D), exit the shell
-        printf("\n");
-        exit(0);
+        printf("\n");   // Move to a new line before exiting for formatting
+        exit(0);    // Exits the shell
     }
 
-    // Remove the newline character at the end of the input (replace with null terminator)
+    // strcspn finds the index of the '\n' char and replaces it with '\0', null
+    // terminator. This removes the newline char left by fgets so that the string
+    // does not read past the user's input.
     buffer[strcspn(buffer, "\n")] = '\0';
 }
 
-/*Class Name: parse_command
+/*Function Name: parse_command
 Authors: Gavin
 External Packages: <stdio.h>, <string.h>
-Class description:  Function to split the command line into arguments
+Function description: This functions parses the raw input string entered by the
+user and splits it into individual arguments, and are stored in the args[] array.
+Each word is separated by a space which separates them into arguments. The array
+is then NULL-terminated to make it compatible with execv() and similar functions
+that require separated arguments in this format. 
 */
 void parse_command(char *input, char **args) {
-    int i = 0;
+    int i = 0;  // Increment with i through the input buffer
+    // Store the first word in token and split input on the first space
     char *token = strtok(input, " ");
-
     // Keep splitting until there are no more tokens or until max args is hit
     while (token != NULL && i < MAX_ARGS - 1) {
-        args[i++] = token;
-        token = strtok(NULL, " ");
+        // After separating store the args in the array
+        args[i++] = token;  // Store the current token
+        token = strtok(NULL, " ");  // By the next space get the next token
     }
 
     args[i] = NULL; // NULL-terminate the array so execv() knows where to stop
 }
 
-/*Class Name: parse_path
+/*Function Name: parse_path
 Authors: Gavin
-External Packages: <stdio.h>, <string.h>
-Class description:  Function to parse the entered PATH to be looked up
+External Packages: <stdio.h>, <string.h>, <stdlib.h>
+Function description:  Function to parse the system's PATH environment variable,
+which is a colon separated list of directories to be looked up and each directory
+is stored in the dirs[] array. This allows the shell to manually search through
+each of these directories that the entered command is expected to be stored in.
 */
 int parse_path(char *dirs[]) {
     char *path_env = getenv("PATH");   // Grab the path variable
     int i = 0; 
 
     // strtok will destory the original string, duplicate safely
+    // strup duplicates the current path variable
     char *path_copy = strdup(path_env);
+    // strtok splits on the colon to separate the directories individually
     char *token = strtok(path_copy, ":");
 
     while (token != NULL && i < MAX_PATHS - 1) {
-        dirs[i++] = strdup(token); // Copy each directory
+        dirs[i++] = strdup(token); // Copy each directory path into dirs[]
         token = strtok(NULL, ":");
     }
 
-    dirs[i] = NULL;
-    free(path_copy); // Clean up temp copy
-    return i;
+    dirs[i] = NULL;     // Null-terminate the array once parsing is done
+    free(path_copy);    // Clean up temp copy string
+    return i;           // Return number of directories parsed
 
 }
 
-/*Class Name: *lookup_path
+/*Function Name: *lookup_path
 Authors: Gavin
 External Packages: <stdio.h>, <string.h>, <unistd.h>
-Class description:  Find the executable by looking in each folder from PATH
+Function description: This function finds the executable by looking in each folder from PATH variable
+previously stored dirs[]. This function is required when using execv() to execute commands because the
+absolute path is required and the absolute path has to be manually looked up. If the command is found
+in one of the directories it returns the full path to the executable. If the command is already an
+absolute path, starts with '/', it is returned as it is. The function returns NULL if the command was
+not found in the provided dirs[].
 */
 char *lookup_path(char *command, char *dirs[]) {
-    static char full_path[MAX_PATH_LEN];
+    static char full_path[MAX_PATH_LEN]; // Buffer to build and store the full path of the command
 
-    // Check if commmand already absolute
+    // Check if commmand already absolute and use it as it is
     if (command[0] == '/') {
         return command;
     }
 
-    // Try each directory and command combination
+    // Try each combination search by prepending each directory to the command name
     for (int i = 0; dirs[i] != NULL; i++) {
-        snprintf(full_path, sizeof(full_path), "%s/%s", dirs[i], command);
+        snprintf(full_path, sizeof(full_path), "%s/%s", dirs[i], command); // Build path like "/bin/ls"
+        // Check if the combination path points to an executable file
         if (access(full_path, X_OK) == 0) {
             return full_path; // Command found
         }
     }
 
-    return NULL;    // Could not find command.
+    return NULL;    // Could not find command if no matches were found 
 }
 
-/*Class Name: main
+/*Function Name: main
 Authors: Gavin
 External Packages: <stdio.h>, <string.h>, <unistd.h>, <sys/wait.h>
-Class description:  Main function where the code is executed and processed by invoking helper functions
+Function description:  Main function of the shell program. It displays a command prompt, reads user input,
+and parses it into commands and arguments. The main function also handles some built in commands like 'cd'
+and 'exit' directly. The external commands however are handled by shell, it forks a child process and uses
+execv() to run the command by using the directory locations from the system PATH.
+
+The main function uses the following logic:
+1. Load and parse the PATH environment variable into a list of directories.
+2. Enter an infinite loop to display the command prompt to handle user commands.
+3. Explicit handling for 'exit' to stop the shell, and 'cd' to change directories.
+4. All other commands are considered to be external and are executed with a child process.
+5. The parent waits for the child to finish executing and terminate before prompting the user again.
 */
 int main() {
     char command_line[MAX_LINE];    // Buffer to hold the raw command input
     char *args[MAX_ARGS];           // Array of strings (char pointers) for command and arguments
     char *path_dirs[MAX_PATHS];     // All folders from $PATH
 
-    parse_path(path_dirs);
+    parse_path(path_dirs); // Load $PATH directories into path_dirs
 
     // Infinite loop to keep the shell running until manually exited
     while (1) {
@@ -203,7 +238,7 @@ int main() {
             continue;
         }
 
-        // Launc external command using fork and execv()
+        // Launch external command using fork and execv()
         pid_t pid = fork();
 
         if (pid < 0) {
@@ -212,7 +247,7 @@ int main() {
         }
 
         if (pid == 0) {
-            // This is the child process
+            // Child process to try and execute the entered command
             char *full_path = lookup_path(args[0], path_dirs);
 
             if (full_path == NULL) {
@@ -220,15 +255,15 @@ int main() {
                 exit(1);
             }
 
-            execv(full_path, args);
-            perror("execv failed");  // This will print if and why execv fails
-            exit(1);            // Exit child process
+            execv(full_path, args); // Replace the child with the command
+            perror("execv failed"); // This will print if and why execv fails
+            exit(1);                // Exit child process
         } else {
-            // This is the parent process
+            // Parent process waits for the child process to finish
             int status;
             waitpid(pid, &status, 0);
         }
     }
 
-    return 0; // Exit the shell (by typing "exit")
+    return 0; // Successful return value when exiting the shell (by typing "exit")
 }
