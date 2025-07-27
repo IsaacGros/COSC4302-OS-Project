@@ -210,6 +210,10 @@ int main() {
 
     parse_path(path_dirs); // Load $PATH directories into path_dirs
 
+    printf("Starting shell...\n"); // Start message to inform user subshell is running
+    sleep(3); // Sleep to simulate boot load time
+    printf("Start success\nPlease enter a command\n"); // Initial message to prompt the user
+
     // Infinite loop to keep the shell running until manually exited
     while (1) {
         print_prompt();     // Show the directory as prompt
