@@ -70,7 +70,7 @@ or existing bugs that we are currently aware of.
 
 
 /*Function Name: print_prompt
-Authors: Gavin
+Authors: Gavin, Oscar
 External Packages: <stdio.h>, <unistd.h>
 Function description: This function prints the current working directory as a
 shell prompt (ex: /home/gavin$) emulating a Linux shell. This is to inform the
@@ -86,7 +86,7 @@ void print_prompt() {
 }
 
 /*Function Name: read_command
-Authors: Gavin
+Authors: Gavin, Oscar
 External Packages: <stdio.h>, <string.h>, <unistd.h>
 Function description: This function reads a line of input from the user and stores
 it in a buffer. The function also includes an exit control that exits the shell.
@@ -107,7 +107,7 @@ void read_command(char *buffer) {
 }
 
 /*Function Name: parse_command
-Authors: Gavin
+Authors: Gavin, Isaac
 External Packages: <stdio.h>, <string.h>
 Function description: This functions parses the raw input string entered by the
 user and splits it into individual arguments, and are stored in the args[] array.
@@ -159,7 +159,7 @@ int parse_path(char *dirs[]) {
 }
 
 /*Function Name: *lookup_path
-Authors: Gavin
+Authors: Gavin, Isaac
 External Packages: <stdio.h>, <string.h>, <unistd.h>
 Function description: This function finds the executable by looking in each folder from PATH variable
 previously stored dirs[]. This function is required when using execv() to execute commands because the
@@ -189,7 +189,7 @@ char *lookup_path(char *command, char *dirs[]) {
 }
 
 /*Function Name: main
-Authors: Gavin
+Authors: Gavin, Isaac, Oscar
 External Packages: <stdio.h>, <string.h>, <unistd.h>, <sys/wait.h>
 Function description:  Main function of the shell program. It displays a command prompt, reads user input,
 and parses it into commands and arguments. The main function also handles some built in commands like 'cd'
